@@ -1,6 +1,6 @@
-# Stochastic Computing Practice
+# Simple Operations
 
-This repository contains scripts and tools for simulating, analyzing, and visualizing stochastic multiplication using bitstreams. The project is designed to help explore the accuracy and behavior of stochastic arithmetic under various conditions.
+This repository contains scripts and tools for simulating, analyzing, and visualizing stochastic operations using bitstreams. The project is designed to help explore the accuracy and behavior of stochastic arithmetic under various conditions.
 
 ## Contents
 
