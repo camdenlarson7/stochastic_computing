@@ -1,10 +1,10 @@
 # Stochastic Computing Practice
 
-This repository contains scripts and tools for simulating, analyzing, and visualizing stochastic multiplication using bitstreams. The project is designed to help you explore the accuracy and behavior of stochastic arithmetic under various conditions.
+This repository contains scripts and tools for simulating, analyzing, and visualizing stochastic multiplication using bitstreams. The project is designed to help explore the accuracy and behavior of stochastic arithmetic under various conditions.
 
 ## Contents
 
-- `sc_arith.py` — Runs a single stochastic multiplication experiment for a fixed pair of random factors (`a`, `b`) across a range of bitstream lengths. Results are saved to CSV files for later analysis.
+- `sc_arith.py` — Runs a single stochastic multiplication experiment for a fixed pair of random factors (`a`, `b`) across a range of bitstream lengths. Results are appended to stochastic_multiplication_results.csv for later analysis.
 - `bulk_arith.py` — Automates running `sc_arith.py` many times to build a large dataset of stochastic multiplication results for different random factors.
 - `stochastic_graphs.py` — Generates interactive HTML graphs (with draggable tables) for a single run, saved in the `single_run_graphs/` folder.
 - `analyze_stochastic_results.py` — Aggregates and visualizes results from all runs in `all_stochastic_results.csv`, saving summary graphs in the `analysis_graphs/` folder.
@@ -59,4 +59,4 @@ pip install pandas plotly
 MIT License
 
 ## Author
-[Your Name]
+[Camden Larson]

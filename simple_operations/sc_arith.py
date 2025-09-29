@@ -32,19 +32,12 @@ def stochastic_multiply(num_bits=128):
         else:
             y.append(0)
             
-
-    print("number a stochastic value: ", xcount / num_bits)
-    print("number b stochastic value: ", ycount / num_bits)
-    # print("number a bit stream ", x)
-    # print("number b bit stream: ", y)
     result = []
     for c in range(num_bits):
         if ((x[c] and y[c]) == 1):
             result.append(1)
         else:
             result.append(0)
-        
-    # print("result: ", result)
 
     count = 0
     for num in result:
@@ -52,8 +45,6 @@ def stochastic_multiply(num_bits=128):
             count = count + 1
     stochastic_result = round(count / num_bits, 8)
     expected_result = round(a * b, 8)
-    print("Stochastic result: ", stochastic_result)
-    print("Expected Result: ", expected_result)
     return stochastic_result, expected_result
 
 # Only handles generating and saving the stochastic multiplication results as CSV
