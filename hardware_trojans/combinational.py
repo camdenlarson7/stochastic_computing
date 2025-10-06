@@ -1,10 +1,11 @@
-def combination_hardware_trojan(a: int, b: int, c: int, input: int) -> int:
-    """A combinational hardware trojan that activates when a=0, b=1, c=1.
-    When activated, it flips the input signal.
+def combination_hardware_trojan(a: int, b: int, c: int, d: int, e: int, input_bit: int) -> int:
+    """Combinational hardware trojan that activates when:
+       a == 0, b == 1, c == 1, d == 1, e == 1 (i.e., (not a) & b & c & d & e).
+       When activated, it flips the input bit.
     """
-    not_a = 1 - a            # NOT gate
-    and_gate = not_a & b & c # AND gate
-    input_star = and_gate ^ input # OR gate
+    not_a = 1 - a
+    and_gate = not_a & b & c & d & e
+    input_star = and_gate ^ input_bit
     return input_star
 
 
