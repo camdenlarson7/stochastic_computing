@@ -17,14 +17,14 @@ sys.path.append(str(Path(__file__).resolve().parent.parent))
 from hardware_trojans.sequential import TrojanCounter
 from simple_operations.sobol_arith import sobol_pairs_base2, encode_unipolar_bitstream
 
-BIT_LENGTH = 128     # small so we can read the printed bitstreams
+BIT_LENGTH = 32     # small so we can read the printed bitstreams
 K_TRIGGER  = 2      # triggers when counter hits all-ones (period 2^K)
 SCRAMBLE   = True
 
 def run_single_case(a: float, b: float, n_bits: int, k_trigger: int,
                     mode: str = "flip_input_a", scramble: bool = True):
     # Sobol samples and baseline encodes
-    uv = sobol_pairs_base2(n_bits, scramble=scramble, seed=123, skip=0)
+    uv = sobol_pairs_base2(n_bits, scramble=scramble, seed=47823, skip=0)
     A = encode_unipolar_bitstream(a, uv[:, 0])
     B = encode_unipolar_bitstream(b, uv[:, 1])
 
@@ -53,6 +53,7 @@ def run_single_case(a: float, b: float, n_bits: int, k_trigger: int,
 
         if er_star and mode == "flip_input_a":
             a_t ^= 1
+            # print(f"Cycle {i}: ER* active, flipping A bit")
         elif er_star and mode == "flip_input_b":
             b_t ^= 1
         # (you could add other modes here if needed)
@@ -60,7 +61,7 @@ def run_single_case(a: float, b: float, n_bits: int, k_trigger: int,
         A_troj[i] = a_t
         B_troj[i] = b_t
         prod_troj[i] = a_t & b_t
-
+    
     return {
         "A": A, "B": B, "Prod_base": prod_base,
         "A_troj": A_troj, "B_troj": B_troj, "Prod_troj": prod_troj,
