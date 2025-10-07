@@ -4,13 +4,27 @@ import numpy as np
 BIT_LENGTH = 2048   # use powers of two for Sobol
 SCRAMBLE = True   
 
-def gen_sobol_pairs(n_bits: int, scramble: bool = True) -> np.ndarray:
+# at top of simple_trojan_test.py
+from scipy.stats.qmc import Sobol
+import math
+
+def sobol_pairs_base2(n_bits: int, scramble: bool = True, seed: int | None = None, skip: int = 0):
     """
-    Generate n_bits pairs (u_i, v_i) from a 2-D Sobol sequence.
-    Shape: (n_bits, 2), values in [0, 1).
+    Generate 2-D Sobol pairs with best properties:
+      - If n_bits is a power of two, use random_base2(log2(n_bits)).
+      - Optionally fast-forward 'skip' points to decorrelate early structure.
+    Falls back to .random(n_bits) if n_bits is not a power of two.
     """
-    sobol = Sobol(d=2, scramble=scramble)
-    return sobol.random(n_bits)  # (n_bits, 2)
+    sob = Sobol(d=2, scramble=scramble, seed=seed)
+    if skip > 0:
+        sob.fast_forward(skip)
+    # use base-2 draw when possible
+    if n_bits > 0 and (n_bits & (n_bits - 1)) == 0:
+        m = int(math.log2(n_bits))
+        return sob.random_base2(m)   # shape: (n_bits, 2)
+    else:
+        return sob.random(n_bits)
+
 
 def encode_unipolar_bitstream(value: float, uni_stream: np.ndarray) -> np.ndarray:
     """
@@ -26,7 +40,7 @@ def sc_multiply_unipolar(a: float, b: float, n_bits: int = BIT_LENGTH, scramble:
     Stochastic multiply (unipolar) via bitwise AND of two encoded streams.
     Returns (estimate, a_mean, b_mean, a_count, b_count).
     """
-    uv = gen_sobol_pairs(n_bits, scramble=scramble)  # (n_bits, 2)
+    uv = sobol_pairs_base2(n_bits, scramble=scramble)  # (n_bits, 2)
     u = uv[:, 0]
     v = uv[:, 1]
 
@@ -53,7 +67,7 @@ def sc_add_unipolar(a: float, b: float, n_bits: int = BIT_LENGTH, p_mux: float =
     If you want (A+B)/2, set p_mux = 0.5.
     Returns estimate.
     """
-    uv = gen_sobol_pairs(n_bits, scramble=scramble)  # (n_bits, 2)
+    uv = sobol_pairs_base2(n_bits, scramble=scramble)  # (n_bits, 2)
     u = uv[:, 0]
     v = uv[:, 1]
 
