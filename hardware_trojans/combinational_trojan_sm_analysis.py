@@ -30,3 +30,12 @@ fig2 = px.line(mean_abs_error, x='Number of Bits', y='Absolute Error',
                markers=True)
 
 fig2.write_html(os.path.join(output_dir, 'mean_absolute_error_vs_bits.html'))
+
+
+
+# 4. Scatter plot: percent error vs. product of a and b (all bit lengths)
+df['a*b'] = df['a'] * df['b']
+fig3 = px.scatter(df, x='a*b', y='Percent Error (%)', color='Number of Bits',
+                  title='Percent Error vs. Product a*b (Colored by Bitstream Length)',
+                  color_continuous_scale='Viridis', log_x=False)
+fig3.write_html(os.path.join(output_dir, 'percent_error_vs_product.html'))
