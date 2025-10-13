@@ -20,15 +20,15 @@ from stoch_mult import run_single_case
 # ----------------------------
 # Config
 # ----------------------------
-BIT_POWERS = [4, 5, 6, 7, 8, 9, 10, 11, 12]  # test 16–1024 bits
+BIT_POWERS = [4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14] 
 K_TRIGGER = 3
 SCRAMBLE = True
 MODE = "flip_input_a"
 SEED = 12345
 
 def sweep_and_plot(powers, k_trigger=K_TRIGGER, mode=MODE, scramble=SCRAMBLE, seed=SEED):
-    a = .5254181
-    b = .3987602
+    a = float(np.random.default_rng(seed).random())
+    b = float(np.random.default_rng(seed+1).random())
     true_val = a * b
 
     bit_lengths = [2 ** p for p in powers]
@@ -49,8 +49,8 @@ def sweep_and_plot(powers, k_trigger=K_TRIGGER, mode=MODE, scramble=SCRAMBLE, se
     # Plot true vs baseline vs trojan
     # ----------------------------
     plt.figure(figsize=(8, 5))
-    plt.plot(bit_lengths, [true_val]*len(bit_lengths),
-             label="True product (a*b)", color="black", linestyle="--", linewidth=1.5)
+    plt.plot(bit_lengths, [abs_err_troj]*len(bit_lengths),
+             label="Abs Error (a*b)", color="black", linestyle="--", linewidth=1.5)
     plt.plot(bit_lengths, baseline_vals,
              label="Stochastic (baseline)", color="tab:blue", marker="o", linewidth=1.5)
     plt.plot(bit_lengths, trojan_vals,
@@ -58,7 +58,7 @@ def sweep_and_plot(powers, k_trigger=K_TRIGGER, mode=MODE, scramble=SCRAMBLE, se
 
     plt.xscale('log', base=2)
     plt.xlabel("Bit length (log2 scale)")
-    plt.ylabel("Computed value")
+    plt.ylabel("Absolute Error")
     plt.title(f"Stochastic Multiply vs Bit Length\n(a={a:.3f}, b={b:.3f}, mode={mode})")
     plt.legend()
     plt.grid(True, which="both", linestyle=":", alpha=0.6)

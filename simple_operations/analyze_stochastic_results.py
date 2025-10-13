@@ -8,7 +8,7 @@ output_dir = 'analysis_graphs'
 os.makedirs(output_dir, exist_ok=True)
 
 # Load the cumulative results
-df = pd.read_csv('all_stochastic_results.csv')
+df = pd.read_csv('all_sobol_results.csv')
 
 # 1. Mean percent error vs. bit length (across all runs)
 mean_error = df.groupby('Number of Bits')['Percent Error (%)'].mean().reset_index()
@@ -39,6 +39,19 @@ fig5 = px.scatter(outliers, x='a*b', y='Percent Error (%)', color='Number of Bit
                   hover_data=['a', 'b', 'Run ID'],
                   title='Outlier Runs: Highest Percent Error per Bitstream Length')
 fig5.write_html(os.path.join(output_dir, 'percent_error_outliers.html'))
+
+# 6. Mean absolute error vs. bit length (across all runs)
+if 'Absolute Error' not in df.columns:
+    # Try to compute it if columns exist
+    if 'True Value' in df.columns and 'Result' in df.columns:
+        df['Absolute Error'] = abs(df['True Value'] - df['Result'])
+    else:
+        print('No Absolute Error column and cannot compute it. Skipping absolute error plot.')
+else:
+    mean_abs_error = df.groupby('Number of Bits')['Absolute Error'].mean().reset_index()
+    fig6 = px.line(mean_abs_error, x='Number of Bits', y='Absolute Error', log_x=True, title='Mean Absolute Error vs. Bitstream Length')
+    fig6.write_html(os.path.join(output_dir, 'mean_absolute_error_vs_bits.html'))
+    print('mean_absolute_error_vs_bits.html')
 
 print('Graphs generated in analysis_graphs/:')
 print('mean_percent_error_vs_bits.html')

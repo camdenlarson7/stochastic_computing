@@ -1,120 +1,118 @@
 # simple_trojan_test.py
 """
-Simple single-case Trojan test:
- - injection mode: flip_input_a (trojan flips A's bit when active)
- - performs one stochastic multiplication (unipolar) using Sobol pairs
- - shows baseline vs trojan bitstreams for A, B, and product
+Single-case stochastic multiply with a sequential Trojan (clean, function-based).
+
+Pipeline per cycle:
+ 1) A_bit = [u < a], B_bit = [v < b]
+ 2) ER* = trojan.clock_tick()
+ 3) If ER*==1: A_bit ^= 1
+ 4) Prod_bit = A_bit & B_bit
+
+This script prints baseline vs trojan estimates and basic counts.
 """
 
-import numpy as np
-import matplotlib.pyplot as plt
+from __future__ import annotations
 import sys
 from pathlib import Path
+import numpy as np
+from scipy.stats.qmc import Sobol
+import random
 
-# make parent (repo root) visible so sibling packages import cleanly
+# Make parent (repo root) visible so sibling packages import cleanly
 sys.path.append(str(Path(__file__).resolve().parent.parent))
 
 from hardware_trojans.sequential import TrojanCounter
-from simple_operations.sobol_arith import sobol_pairs_base2, encode_unipolar_bitstream
+from simple_operations.sobol_mult import generate_sobol_bitstream
 
-BIT_LENGTH = 32     # small so we can read the printed bitstreams
-K_TRIGGER  = 2      # triggers when counter hits all-ones (period 2^K)
+# ----------------------------
+# Config
+# ----------------------------
+BIT_LENGTH = 131072
+K_TRIGGER  = 3
 SCRAMBLE   = True
+SOBOL_SEED = 47823
+ROW_SHIFT  = 0      # optional circular shift of Sobol rows (0 = none)
+MODE       = "flip_input_a"  # keep it simple: flip A when ER* is active
 
-def run_single_case(a: float, b: float, n_bits: int, k_trigger: int,
-                    mode: str = "flip_input_a", scramble: bool = True):
-    # Sobol samples and baseline encodes
-    uv = sobol_pairs_base2(n_bits, scramble=scramble, seed=47823, skip=0)
-    A = encode_unipolar_bitstream(a, uv[:, 0])
-    B = encode_unipolar_bitstream(b, uv[:, 1])
+# ----------------------------
+# Helpers
+# ----------------------------
+def generate_independent_streams(a, b, n_bits, seed_a, seed_b):
+    # Use the same strategy as sobol_mult.py for independent Sobol bitstreams
+    # Import the function directly for consistency
+    A, _ = generate_sobol_bitstream(a, n_bits, seed=seed_a)
+    B, _ = generate_sobol_bitstream(b, n_bits, seed=seed_b)
+    A = np.array(A, dtype=np.uint8)
+    B = np.array(B, dtype=np.uint8)
+    return A, B
 
-    # Baseline product (no injection)
-    prod_base = (A & B).astype(np.uint8)
 
-    # Trojan-enabled run (we'll record injected A/B and product)
+def baseline_product(A: np.ndarray, B: np.ndarray) -> tuple[np.ndarray, float, int, int]:
+    """Compute baseline product bits and stats by ANDing each bit individually."""
+    prod = np.empty_like(A, dtype=np.uint8)
+    for i in range(len(A)):
+        prod[i] = A[i] & B[i]
+    est = float(prod.mean())
+    return prod, est, int(A.sum()), int(B.sum())
+
+def run_trojan_on_A(A: np.ndarray,
+                    B: np.ndarray,
+                    k_trigger: int,
+                    mode: str = "flip_input_a") -> tuple[np.ndarray, np.ndarray, np.ndarray, float, int, int]:
+    """
+    Per-cycle: tick trojan -> if ER*==1 and mode=='flip_input_a', flip A bit, then AND.
+    Returns (A_troj, B_troj, Prod_troj, est_troj, A1s, B1s).
+    """
+    n = len(A)
     trojan = TrojanCounter(k=k_trigger, trigger_kind="all_one")
     trojan.set_ER(0)
     trojan.set_Ena(1)
 
-    A_troj   = np.zeros(n_bits, dtype=np.uint8)
-    B_troj   = np.zeros(n_bits, dtype=np.uint8)
-    prod_troj = np.zeros(n_bits, dtype=np.uint8)
-    erstar_trace = np.zeros(n_bits, dtype=np.uint8)
+    A_t = np.empty(n, dtype=np.uint8)
+    B_t = np.empty(n, dtype=np.uint8)
+    P_t = np.empty(n, dtype=np.uint8)
 
-    for i in range(n_bits):
+    for i in range(n):
         a_bit = int(A[i])
         b_bit = int(B[i])
-
         er_star = trojan.clock_tick()
-        erstar_trace[i] = er_star
-
-        a_t = a_bit
-        b_t = b_bit
 
         if er_star and mode == "flip_input_a":
-            a_t ^= 1
-            # print(f"Cycle {i}: ER* active, flipping A bit")
+            a_bit ^= 1
         elif er_star and mode == "flip_input_b":
-            b_t ^= 1
-        # (you could add other modes here if needed)
+            b_bit ^= 1
+        # (keep minimal; other modes can be added later)
 
-        A_troj[i] = a_t
-        B_troj[i] = b_t
-        prod_troj[i] = a_t & b_t
-    
-    return {
-        "A": A, "B": B, "Prod_base": prod_base,
-        "A_troj": A_troj, "B_troj": B_troj, "Prod_troj": prod_troj,
-        "erstar_trace": erstar_trace,
-        "a": a, "b": b,
-        "true": a * b,
-        "est_base": float(prod_base.mean()),
-        "est_troj": float(prod_troj.mean())
-    }
+        A_t[i] = a_bit
+        B_t[i] = b_bit
+        P_t[i] = a_bit & b_bit
 
-def bits_to_str(bits: np.ndarray) -> str:
-    """Turn a 0/1 array into a compact string, e.g., '101001...'."""
-    return ''.join('1' if x else '0' for x in bits.tolist())
+    est_troj = float(P_t.mean())
+    return A_t, B_t, P_t, est_troj, int(A_t.sum()), int(B_t.sum())
 
+# ----------------------------
+# Main: single simple case
+# ----------------------------
 def main():
-    rng = np.random.default_rng(12345)
-    a = float(rng.random()); b = float(rng.random())
+    a = random.random()
+    b = random.random()
 
-    res = run_single_case(a=a, b=b, n_bits=BIT_LENGTH, k_trigger=K_TRIGGER,
-                          mode="flip_input_a", scramble=SCRAMBLE)
+    print(f"a={a:.6f}, b={b:.6f}, true a*b={a*b:.6f}")
 
-    print(f"BIT_LENGTH={BIT_LENGTH}, K_TRIGGER={K_TRIGGER}")
-    print(f"a={res['a']:.6f}, b={res['b']:.6f}")
-    print(f"true value={res['true']:.6f}, baseline est={res['est_base']:.6f}, trojan est={res['est_troj']:.6f}")
-    print("\n--- Bitstreams (baseline) ---")
-    print("A         :", bits_to_str(res["A"]))
-    print("B         :", bits_to_str(res["B"]))
-    print("Prod_base :", bits_to_str(res["Prod_base"]))
-    print("\n--- Bitstreams (trojan-injected) ---")
-    print("A_troj    :", bits_to_str(res["A_troj"]))
-    print("B_troj    :", bits_to_str(res["B_troj"]))
-    print("Prod_troj :", bits_to_str(res["Prod_troj"]))
-    print("\nER* (1=trojan active):")
-    print(bits_to_str(res["erstar_trace"]))
 
-    # Visualization: stacked rows so flips are obvious
-    # Order: ER*, A, A_troj, B, B_troj, Prod_base, Prod_troj
-    viz = np.vstack([
-        res["erstar_trace"],
-        res["A"], res["A_troj"],
-        res["B"], res["B_troj"],
-        res["Prod_base"], res["Prod_troj"],
-    ]).astype(float)
+    A, B = generate_independent_streams(a, b, BIT_LENGTH, seed_a=123, seed_b=567)
+    print("A :", A)
+    print("B :", B)
 
-    plt.figure(figsize=(10, 3.5))
-    plt.imshow(viz, aspect='auto', interpolation='nearest')
-    plt.yticks(range(viz.shape[0]),
-               ["ER*", "A", "A_troj", "B", "B_troj", "Prod_base", "Prod_troj"])
-    plt.xticks(range(BIT_LENGTH), range(BIT_LENGTH))
-    plt.title("Baseline vs Trojan Bitstreams (columns are cycles)")
-    plt.xlabel("Cycle index")
-    plt.tight_layout()
-    plt.show()
+    # Baseline
+    prod_base, est_base, a_ones, b_ones = baseline_product(A, B)
+    print(f"Baseline: est={est_base:.6f} | A ones={a_ones}/{BIT_LENGTH} ({a_ones/BIT_LENGTH:.6f})"
+          f" | B ones={b_ones}/{BIT_LENGTH} ({b_ones/BIT_LENGTH:.6f})")
+
+    # Trojan (flip A on ER*)
+    A_t, B_t, prod_t, est_troj, a1_t, b1_t = run_trojan_on_A(A, B, k_trigger=K_TRIGGER, mode=MODE)
+    print(f"Trojan  : est={est_troj:.6f} | A' ones={a1_t}/{BIT_LENGTH} ({a1_t/BIT_LENGTH:.6f})"
+          f" | B' ones={b1_t}/{BIT_LENGTH} ({b1_t/BIT_LENGTH:.6f})")
 
 if __name__ == "__main__":
     main()
