@@ -4,4 +4,4 @@ This repository contains scripts and tools used to design digital systems using 
 
 ## Simple Operations
 
-A folder that contains scripts and analysis of simple stochastic operations.
+A folder that contains scripts and analysis of simple stochastic and operations.
