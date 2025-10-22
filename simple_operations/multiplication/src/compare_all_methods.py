@@ -1,6 +1,6 @@
 import struct
 import matplotlib.pyplot as plt
-from sequential_trojan_binary import binary_multiply, binary_mult_gatelevel_with_sequential_trojan
+from sequential_trojan_binary import binary_mult_gatelevel_with_sequential_trojan
 from stochastic import generate_sobol_bitstream
 import numpy as np
 import pandas as pd
