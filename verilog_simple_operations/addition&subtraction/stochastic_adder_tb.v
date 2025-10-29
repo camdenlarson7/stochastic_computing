@@ -1,16 +1,16 @@
 `timescale 1ns / 1ps
 
-module stochastic_adder_tb;
+module stochastic_subtractor_tb;
 
     parameter BIT_LENGTH = 128;
     parameter NUM_STREAMS = 500;
 
-    // DUT signals
+
     reg a, b, rand_bit;
     wire y;
 
-    // Instantiate the stochastic adder
-    stochastic_adder uut (
+    // Instantiate the stochastic subtractor
+    stochastic_subtractor uut (
         .a(a),
         .b(b),
         .rand_bit(rand_bit),
@@ -21,14 +21,13 @@ module stochastic_adder_tb;
     integer a_file, b_file, sel_file, y_file;
     integer i, j;
 
-    // Storage arrays for multiple streams
+
     reg a_vals   [0:NUM_STREAMS-1][0:BIT_LENGTH-1];
     reg b_vals   [0:NUM_STREAMS-1][0:BIT_LENGTH-1];
     reg sel_vals [0:NUM_STREAMS-1][0:BIT_LENGTH-1];
     reg y_vals   [0:NUM_STREAMS-1][0:BIT_LENGTH-1];
 
     initial begin
-        $display("Reading multi-row bitstreams...");
 
         a_file  = $fopen("a_bits.txt", "r");
         b_file  = $fopen("b_bits.txt", "r");
@@ -49,10 +48,8 @@ module stochastic_adder_tb;
             end
         end
 
-        $display("Finished loading bitstreams");
-        $display("Starting multi-stream stochastic addition test...");
 
-        // Perform addition stream by stream
+        // Perform subtraction stream by stream
         for (i = 0; i < NUM_STREAMS; i = i + 1) begin
             $display("---- Stream %0d ----", i);
             for (j = 0; j < BIT_LENGTH; j = j + 1) begin
@@ -73,7 +70,7 @@ module stochastic_adder_tb;
             $fwrite(y_file, "\n");
         end
 
-        $display("✅ Done! Output written to y_bits.txt");
+        $display("Output written to y_bits.txt");
         $fclose(a_file);
         $fclose(b_file);
         $fclose(sel_file);
