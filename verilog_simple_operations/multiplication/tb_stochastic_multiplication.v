@@ -8,6 +8,8 @@ module tb_stochastic_mult;
     // DUT I/O
     reg  [N-1:0] a_bits, b_bits;
     wire [N-1:0] y_bits;
+    reg [16383:0] tmp_bits;
+    real tmp_val;
 
     stochastic_mult #(.N(N)) dut (
         .a_bits(a_bits),
@@ -41,7 +43,7 @@ module tb_stochastic_mult;
 
     initial begin
         // === Choose which lines to read ===
-        lineA = 1;  // first stochastic number
+        lineA = 7;  // first stochastic number
         lineB = 3;  // second stochastic number
 
         // Open file
