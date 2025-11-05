@@ -8,11 +8,11 @@
 module seq_trojan #(
     // Counter and timing
     parameter integer COUNTER_WIDTH  = 32,
-    parameter integer START_CYCLE    = 256,  // first cycle to arm
-    parameter integer ACTIVE_CYCLES  = 128,  // number of cycles armed
+    parameter integer START_CYCLE    = 0,  // first cycle to arm
+    parameter integer ACTIVE_CYCLES  = 64,  // number of cycles armed
 
     // Modify frequency while armed (e.g., only 1 out of N bits)
-    parameter integer HIT_EVERY      = 1,    // 1 = hit every cycle while armed
+    parameter integer HIT_EVERY      = 8,    // 1 = hit every cycle while armed
                                               // 2 = every other cycle, etc.
 
     // Payload mode
@@ -21,7 +21,7 @@ module seq_trojan #(
     // 2: force 0
     // 3: bit_in XOR T
     // 4: replace with T
-    parameter integer PAYLOAD_MODE   = 4
+    parameter integer PAYLOAD_MODE   = 0
 ) (
     input  wire clk,
     input  wire rst_n,     // async active-low reset

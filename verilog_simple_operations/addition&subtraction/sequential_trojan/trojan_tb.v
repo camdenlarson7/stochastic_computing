@@ -29,7 +29,7 @@ module stochastic_adder_trojan_tb;
     // optional observability
     wire trojan_active;
     wire trojan_hit;
-    wire [31:0] trojan_count;
+    wire [7:0] trojan_count;
 
     // --- Memories (2-D unpacked arrays)
     reg a_vals        [0:NUM_STREAMS-1][0:BIT_LENGTH-1];
@@ -52,9 +52,9 @@ module stochastic_adder_trojan_tb;
     // payload mode 0 = invert bit_in (you can change params below).
     seq_trojan #(
         .COUNTER_WIDTH (32),
-        .START_CYCLE   (64),
+        .START_CYCLE   (0),
         .ACTIVE_CYCLES (64),
-        .HIT_EVERY     (1),
+        .HIT_EVERY     (8),
         .PAYLOAD_MODE  (0)   // 0: invert; 1: force1; 2: force0; 3: bit_in^T; 4: T
     ) uut_trojan (
         .clk      (clk),
@@ -117,6 +117,11 @@ module stochastic_adder_trojan_tb;
         // --- Drive streams bit-by-bit synchronized to clock
         // Set inputs on negedge, sample outputs on following posedge.
         for (i = 0; i < NUM_STREAMS; i = i + 1) begin
+            
+            // Re-sync trojan counters to start of stream
+            @(negedge clk); rst_n = 1'b0;
+            @(negedge clk); rst_n = 1'b1;
+
             $display("---- Stream %0d ----", i);
             for (j = 0; j < BIT_LENGTH; j = j + 1) begin
                 @(negedge clk);
