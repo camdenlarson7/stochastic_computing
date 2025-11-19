@@ -73,6 +73,9 @@ for (int i = 0; i < 293; i++) begin
     else
       payload_mode = MODE_CONST;
 
+    // To use a single payload mode for all bits
+    payload_mode = MODE_FLIP;
+
     // Apply Trojan at the output on specified bits
     if (!trojan_active) begin
       edges[i][j] = normal_edge;
