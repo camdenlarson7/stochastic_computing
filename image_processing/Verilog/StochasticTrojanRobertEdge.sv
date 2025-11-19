@@ -57,37 +57,41 @@ for (int i = 0; i < 293; i++) begin
     grady       = image[i][j+1] ^ image[i+1][j];
     normal_edge = selstream[i][j] ? gradx : grady;
 
-    // Sequential trigger based on j (acts like a time/column counter)
-    trojan_active = (j >= TROJAN_COL_START) && (j < TROJAN_COL_END) && (J % 8 ==0);
+    // Trigger: Trojan active in specified column range
+    trojan_active = (j >= 150) && (j < 350);
 
     // Payload selection based on i
-    // Split the image vertically into 4 bands with different Trojan effects
-    if (i < 73) begin
-      payload_mode = MODE_FORCE_0;   // band 1: force 0
-    end
-    else if (i < 146) begin
-      payload_mode = MODE_FORCE_1;   // band 2: force 1
-    end
-    else if (i < 219) begin
-      payload_mode = MODE_FLIP;      // band 3: flip
-    end
-    else begin
-      payload_mode = MODE_CONST;     // band 4: constant Trojan value
-    end
+    if (i < 73)
+      payload_mode = MODE_FORCE_0;
+    else if (i < 146)
+      payload_mode = MODE_FORCE_1;
+    else if (i < 219)
+      payload_mode = MODE_FLIP;
+    else
+      payload_mode = MODE_CONST;
 
-    // Apply Trojan at the output of the operation
+    // Apply Trojan at the output on specified bits
     if (!trojan_active) begin
-      // Trojan dormant: honest Roberts edge result
       edges[i][j] = normal_edge;
     end
     else begin
-      // Trojan active: corrupt normal_edge according to payload_mode
       case (payload_mode)
-        MODE_FORCE_0: edges[i][j] = '0;                // all zeros
-        MODE_FORCE_1: edges[i][j] = ~'0;               // all ones
-        MODE_FLIP:    edges[i][j] = ~normal_edge;      // bitwise invert
-        MODE_CONST:   edges[i][j] = trojan_const;      // fixed Trojan pattern
-        default:      edges[i][j] = normal_edge;       // safety fallback
+        // Force 0 only on masked bits
+        MODE_FORCE_0: edges[i][j] =
+          normal_edge & ~BIT_MASK;
+
+        // Force 1 only on masked bits
+        MODE_FORCE_1: edges[i][j] =
+          normal_edge | BIT_MASK;
+
+        // Flip only masked bits
+        MODE_FLIP:    edges[i][j] =
+          normal_edge ^ BIT_MASK;
+
+        // Replace masked bits with Trojan constant bits
+        MODE_CONST:   edges[i][j] =
+          (normal_edge & ~BIT_MASK) | (trojan_const & BIT_MASK);
+        default:      edges[i][j] = normal_edge;
       endcase
     end
   end
