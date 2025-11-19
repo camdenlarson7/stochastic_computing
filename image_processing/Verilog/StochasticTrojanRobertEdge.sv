@@ -58,7 +58,7 @@ for (int i = 0; i < 293; i++) begin
     normal_edge = selstream[i][j] ? gradx : grady;
 
     // Sequential trigger based on j (acts like a time/column counter)
-    trojan_active = (j >= TROJAN_COL_START) && (j < TROJAN_COL_END);
+    trojan_active = (j >= TROJAN_COL_START) && (j < TROJAN_COL_END) && (J % 8 ==0);
 
     // Payload selection based on i
     // Split the image vertically into 4 bands with different Trojan effects
