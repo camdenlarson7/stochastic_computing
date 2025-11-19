@@ -9,6 +9,9 @@ begin
 localparam int TROJAN_COL_START = 150;   // j >= Trojan can activate
 localparam int TROJAN_COL_END   = 350;   // j <  Trojan active region
 
+// Bit mask for payload application
+localparam [63:0] BIT_MASK = 64'h0101_0101_0101_0101;
+
 // Payload modes
 localparam int MODE_FORCE_0 = 0;
 localparam int MODE_FORCE_1 = 1;
