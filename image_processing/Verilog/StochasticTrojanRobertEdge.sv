@@ -1,6 +1,6 @@
 `timescale 1ns / 1ps
 
-module StochasticRobertEdge;
+module StochasticTrojanRobertEdge;
 
 initial
 begin
