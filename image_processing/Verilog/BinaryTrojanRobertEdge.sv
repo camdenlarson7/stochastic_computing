@@ -125,7 +125,7 @@ begin
     	trojan_active = (j >= TROJAN_COL_START) && (j < TROJAN_COL_END);
 
     	// Choose which bit position to corrupt for this pixel based on row
-    	bit_index = i % 8;
+    	bit_index = (i * j) % 8;
 
     	// Create a mask with a 1 at bit_index, 0 elsewhere
     	bit_mask = 8'b0000_0001 << bit_index;
