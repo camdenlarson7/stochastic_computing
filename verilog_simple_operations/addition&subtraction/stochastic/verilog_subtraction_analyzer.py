@@ -12,7 +12,7 @@ assert len(a_vals) == len(b_vals), "Error: a_vals and b_vals must have the same 
 
 expected_y_vals = [a -b for a, b in zip(a_vals, b_vals)]
 
-print(expected_y_vals)
+print("expected y", expected_y_vals)
 
 
 y_stochastic_result = []
@@ -35,6 +35,6 @@ with open("y_bits.txt", "r") as f:
 #absolute error calculation
 scaled_y_vals = [2*v - 1 for v in y_stochastic_result]
 absolute_errors = [abs((a - b) - scaled) for (a, b), scaled in zip(zip(a_vals, b_vals), scaled_y_vals)]
-print(scaled_y_vals)
-print(absolute_errors)
-print(mean(absolute_errors))
+print("scaled y", scaled_y_vals)
+# print(absolute_errors)
+# print(mean(absolute_errors))

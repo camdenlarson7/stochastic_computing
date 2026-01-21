@@ -5,14 +5,14 @@ module stochastic_adder_trojan_tb;
     parameter BIT_LENGTH  = 128;
     parameter NUM_STREAMS = 500;
 
-    // --- I/O staging / housekeeping
+    // I/O staging
     integer rc, tmp;
     integer a_file, b_file, sel_file;
     integer y_clean_file, y_trojan_file, y_file_mirror; // mirror = y_bits.txt
 
     integer i, j;
 
-    // --- DUT signals
+    // DUT signals
     reg  a, b, rand_bit;
 
     // clock/reset for sequential trojan
@@ -26,21 +26,17 @@ module stochastic_adder_trojan_tb;
     wire y_clean;      // output of adder (no trojan)
     wire y_trojan;     // output after trojan mux
 
-    // optional observability
     wire trojan_active;
     wire trojan_hit;
     wire [7:0] trojan_count;
 
-    // --- Memories (2-D unpacked arrays)
     reg a_vals        [0:NUM_STREAMS-1][0:BIT_LENGTH-1];
     reg b_vals        [0:NUM_STREAMS-1][0:BIT_LENGTH-1];
     reg sel_vals      [0:NUM_STREAMS-1][0:BIT_LENGTH-1];
     reg y_clean_vals  [0:NUM_STREAMS-1][0:BIT_LENGTH-1];
     reg y_trojan_vals [0:NUM_STREAMS-1][0:BIT_LENGTH-1];
 
-    // =========================================
     //  DUTs
-    // =========================================
     stochastic_adder uut_adder (
         .a(a),
         .b(b),
@@ -48,8 +44,8 @@ module stochastic_adder_trojan_tb;
         .y(y_clean)
     );
 
-    // Default trojan: arms at cycle 64 for 64 cycles, hits every cycle,
-    // payload mode 0 = invert bit_in (you can change params below).
+    // Default trojan: arms at cycle 64 for 64 cycles, hits every 8 cycles,
+    // payload mode 0 = invert bit_in.
     seq_trojan #(
         .COUNTER_WIDTH (32),
         .START_CYCLE   (0),
@@ -68,9 +64,7 @@ module stochastic_adder_trojan_tb;
         .count    (trojan_count)
     );
 
-    // =========================================
     //  Clock / Reset
-    // =========================================
     initial begin
         clk = 1'b0;
         forever #0.5 clk = ~clk;  // 1.0 time-unit period; one bit per posedge
@@ -82,12 +76,10 @@ module stochastic_adder_trojan_tb;
         rst_n = 1'b1;
     end
 
-    // =========================================
     //  Main TB
-    // =========================================
     initial begin
         a = 0; b = 0; rand_bit = 0;
-        trigger = 1'b1;          // keep trigger asserted; trojan window & divider gate it
+        trigger = 1'b1;          // keep trigger asserted
         T_payload = 1'b1;        // payload value used by modes 3/4; ignored by others
 
         $display("Reading multi-row bitstreams...");
@@ -97,7 +89,7 @@ module stochastic_adder_trojan_tb;
         sel_file       = $fopen("sel_bits.txt", "r");
         y_clean_file   = $fopen("y_clean_bits.txt",   "w");
         y_trojan_file  = $fopen("y_trojan_bits.txt",  "w");
-        y_file_mirror  = $fopen("y_bits.txt",         "w"); // mirror for your existing Python
+        y_file_mirror  = $fopen("y_bits.txt",         "w"); // mirror for Python
 
         if (!a_file || !b_file || !sel_file ||
             !y_clean_file || !y_trojan_file || !y_file_mirror) begin
@@ -105,7 +97,7 @@ module stochastic_adder_trojan_tb;
             $finish;
         end
 
-        // --- Read inputs into arrays
+        // Read inputs into arrays
         for (i = 0; i < NUM_STREAMS; i = i + 1) begin
             for (j = 0; j < BIT_LENGTH; j = j + 1) begin
                 rc = $fscanf(a_file,   "%d", tmp); a_vals[i][j]   = (tmp != 0);
@@ -114,10 +106,10 @@ module stochastic_adder_trojan_tb;
             end
         end
 
-        // --- Drive streams bit-by-bit synchronized to clock
+        // Drive streams bit-by-bit synchronized to clock
         // Set inputs on negedge, sample outputs on following posedge.
         for (i = 0; i < NUM_STREAMS; i = i + 1) begin
-            
+
             // Re-sync trojan counters to start of stream
             @(negedge clk); rst_n = 1'b0;
             @(negedge clk); rst_n = 1'b1;
@@ -138,7 +130,7 @@ module stochastic_adder_trojan_tb;
             end
         end
 
-        // --- Write results
+        // Write results
         for (i = 0; i < NUM_STREAMS; i = i + 1) begin
             for (j = 0; j < BIT_LENGTH; j = j + 1) begin
                 $fwrite(y_clean_file,  "%0d ", y_clean_vals[i][j]);

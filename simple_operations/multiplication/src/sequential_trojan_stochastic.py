@@ -1,23 +1,3 @@
-#!/usr/bin/env python3
-"""
-stochastic_mul_with_sequential_trojan.py
-
-Runs Sobol-based stochastic multiplication both CLEAN and with a SEQUENTIAL TROJAN
-using the user's existing TrojanCounter class, which lives in a sibling folder:
-
-<project_root>/
-  hardware_trojans/             <-- contains trojan_counter.py (defines TrojanCounter)
-  simple_operations/
-    multiplication/
-      src/
-        stochastic_mul_with_sequential_trojan.py   <-- this script
-
-Import path setup below adds the project root to sys.path so we can do:
-    from hardware_trojans.trojan_counter import TrojanCounter
-
-Outputs a CSV comparing clean vs. trojan results across bit-lengths.
-"""
-
 import os
 import sys
 from pathlib import Path
@@ -112,67 +92,43 @@ def stochastic_multiply_with_trojan_counter(num_bits: int,
 # Experiment runner
 # -----------------------------
 def main():
-    # Powers of two up to 2^17 (like your baseline)
-    bit_sizes = [2**i for i in range(1, 18)]
+    bit_size = 2**12
 
     # Fix a and b for all bit-lengths
     a = round(random.random(), 6)
     b = round(random.random(), 6)
 
-    run_id = str(uuid.uuid4())
-    timestamp = datetime.now().isoformat()
-    print(f"Fixed a: {a}, Fixed b: {b}, Run ID: {run_id}, Timestamp: {timestamp}")
+    
+    print(f"Fixed a: {a}, Fixed b: {b}")
 
     # Configure trojan counter width (trigger once per 2^k cycles)
-    k_counter_bits = 8  # e.g., trigger every 256 cycles
-
-    rows = []
-    for bits in bit_sizes:
-        print(f"Testing {bits} bits ...")
-        clean = stochastic_multiply_clean(bits, a, b, x_seed=123, y_seed=567)
-        troj, flips, flip_rate, trig_period = stochastic_multiply_with_trojan_counter(
-            bits, a, b, k_counter_bits=k_counter_bits, x_seed=123, y_seed=567
-        )
-        expected = round(a * b, 8)
-
-        if expected != 0:
-            err_clean = abs(clean - expected) / abs(expected) * 100.0
-            err_troj  = abs(troj  - expected) / abs(expected) * 100.0
-        else:
-            err_clean = 0.0
-            err_troj  = 0.0
-
-        rows.append({
-            "Run ID": run_id,
-            "Timestamp": timestamp,
-            "a": a,
-            "b": b,
-            "Number of Bits": bits,
-            "Expected Result": expected,
-            "Stochastic Result (Clean)": clean,
-            "Stochastic Result (Trojan)": troj,
-            "Delta (Trojan - Clean)": round(troj - clean, 8),
-            "Percent Error Clean (%)": round(err_clean, 6),
-            "Percent Error Trojan (%)": round(err_troj, 6),
-            "Trojan k (counter bits)": k_counter_bits,
-            "Trojan Trigger Period (cycles)": trig_period,
-            "Trojan Flips Applied": flips,
-            "Trojan Flip Rate": round(flip_rate, 8),
-        })
-
-    df = pd.DataFrame(rows)
-    out_file = "sobol_multiplication_results_seqtrojan.csv"
-    df.to_csv(out_file, index=False)
-    print(df)
-
-    # Append to master file
-    master_file = "all_sobol_results_seqtrojan.csv"
-    append_header = not os.path.isfile(master_file)
-    df.to_csv(master_file, mode='a', header=append_header, index=False)
-
-    print(f"\nSaved: {out_file}")
-    print(f"Appended to: {master_file}")
-    print("\nNOTE: If import failed, ensure your file is at hardware_trojans/trojan_counter.py with class TrojanCounter.")
-
+    k_counter_bits = 3  
+    
+    clean = stochastic_multiply_clean(bit_size, a, b, x_seed=123, y_seed=567)
+    troj, flips, flip_rate, trig_period = stochastic_multiply_with_trojan_counter(
+        bit_size, a, b, k_counter_bits=k_counter_bits, x_seed=123, y_seed=567
+    )
+    expected = round(a * b, 8)
+    if expected != 0:
+        err_clean = abs(clean - expected) / abs(expected) * 100.0
+        err_troj  = abs(troj  - expected) / abs(expected) * 100.0
+    else:
+        err_clean = 0.0
+        err_troj  = 0.0
+    print({
+        "a": a,
+        "b": b,
+        "Number of Bits": bit_size,
+        "Expected Result": expected,
+        "Stochastic Result (Clean)": clean,
+        "Stochastic Result (Trojan)": troj,
+        "Delta (Trojan - Clean)": round(troj - clean, 8),
+        "Percent Error Clean (%)": round(err_clean, 6),
+        "Percent Error Trojan (%)": round(err_troj, 6),
+        "Trojan k (counter bits)": k_counter_bits,
+        "Trojan Trigger Period (cycles)": trig_period,
+        "Trojan Flips Applied": flips,
+        "Trojan Flip Rate": round(flip_rate, 8),
+    })
 if __name__ == "__main__":
     main()

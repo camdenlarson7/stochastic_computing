@@ -5,11 +5,11 @@ module stochastic_subtractor_tb;
     parameter BIT_LENGTH = 128;
     parameter NUM_STREAMS = 500;
 
-
+    // DUT signals
     reg a, b, rand_bit;
     wire y;
 
-    // Instantiate the stochastic subtractor
+    // Instantiate the subtractor (your module)
     stochastic_subtractor uut (
         .a(a),
         .b(b),
@@ -17,53 +17,50 @@ module stochastic_subtractor_tb;
         .y(y)
     );
 
-    // File handles
+    // Files / loop vars
     integer a_file, b_file, sel_file, y_file;
-    integer i, j;
+    integer i, j, rc, tmp;
 
-
+    // 2-D unpacked arrays (SystemVerilog)
     reg a_vals   [0:NUM_STREAMS-1][0:BIT_LENGTH-1];
     reg b_vals   [0:NUM_STREAMS-1][0:BIT_LENGTH-1];
     reg sel_vals [0:NUM_STREAMS-1][0:BIT_LENGTH-1];
     reg y_vals   [0:NUM_STREAMS-1][0:BIT_LENGTH-1];
 
     initial begin
+        a = 0; b = 0; rand_bit = 0;
 
-        a_file  = $fopen("a_bits.txt", "r");
-        b_file  = $fopen("b_bits.txt", "r");
+        a_file   = $fopen("a_bits.txt",   "r");
+        b_file   = $fopen("b_bits.txt",   "r");
         sel_file = $fopen("sel_bits.txt", "r");
-        y_file  = $fopen("y_bits.txt", "w");
+        y_file   = $fopen("y_bits.txt",   "w");
 
-        if (!a_file || !b_file || !sel_file) begin
-            $display("Error: Could not open input files");
+        if (!a_file || !b_file || !sel_file || !y_file) begin
+            $display("Error: Could not open one or more files");
             $finish;
         end
 
-        // Read matrix row by row (NUM_STREAMS × BIT_LENGTH)
+        // Read NUM_STREAMS × BIT_LENGTH bits
         for (i = 0; i < NUM_STREAMS; i = i + 1) begin
             for (j = 0; j < BIT_LENGTH; j = j + 1) begin
-                $fscanf(a_file, "%d", a_vals[i][j]);
-                $fscanf(b_file, "%d", b_vals[i][j]);
-                $fscanf(sel_file, "%d", sel_vals[i][j]);
+                rc = $fscanf(a_file,   "%d", tmp); a_vals[i][j]   = (tmp != 0);
+                rc = $fscanf(b_file,   "%d", tmp); b_vals[i][j]   = (tmp != 0);
+                rc = $fscanf(sel_file, "%d", tmp); sel_vals[i][j] = (tmp != 0);
             end
         end
 
-
-        // Perform subtraction stream by stream
+        // Run subtraction stream by stream
         for (i = 0; i < NUM_STREAMS; i = i + 1) begin
-            $display("---- Stream %0d ----", i);
             for (j = 0; j < BIT_LENGTH; j = j + 1) begin
-                a = a_vals[i][j];
-                b = b_vals[i][j];
+                a        = a_vals[i][j];
+                b        = b_vals[i][j];
                 rand_bit = sel_vals[i][j];
-                #1; // small delay per bit
+                #1;
                 y_vals[i][j] = y;
-                $display("Stream %0d Bit %0d: a=%0d b=%0d sel=%0d -> y=%0d",
-                         i, j, a, b, rand_bit, y);
             end
         end
 
-        // Write y bits to file row by row
+        // Write outputs
         for (i = 0; i < NUM_STREAMS; i = i + 1) begin
             for (j = 0; j < BIT_LENGTH; j = j + 1)
                 $fwrite(y_file, "%0d ", y_vals[i][j]);
@@ -71,10 +68,7 @@ module stochastic_subtractor_tb;
         end
 
         $display("Output written to y_bits.txt");
-        $fclose(a_file);
-        $fclose(b_file);
-        $fclose(sel_file);
-        $fclose(y_file);
+        $fclose(a_file); $fclose(b_file); $fclose(sel_file); $fclose(y_file);
         $finish;
     end
 endmodule
