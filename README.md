@@ -113,6 +113,6 @@ This is a completed research project. The code is maintained for reference and e
 
 ## Authors
 
-Camden Larson
-William Froass
-Andrew Han
+- Camden Larson
+- William Froass
+- Andrew Han
